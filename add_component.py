@@ -13,16 +13,16 @@ except EOFError:
 import os
 os.system('cls')  # For Windows
 
-'''
-Manufacturer_Part_Number = ""
-Manufacturer = ""
-Distributor_Part_Number = ""
-Description = ""
-Value = ""
-Tolerance = ""
-Package_Case = ""
-Packaging = ""
-'''
+
+Manufacturer_Part_Number = "-"
+Manufacturer = "-"
+Distributor_Part_Number = "-"
+Description = "-"
+Value = "-"
+Tolerance = "-"
+Package_Case = "-"
+Packaging = "-"
+
 
 # extract data from input
 for line in lines:
@@ -55,15 +55,11 @@ for line in lines:
 	elif line.find("Packaging ?") == 0:
 		Packaging = line[11:-2]
 
-if Manufacturer_Part_Number == "":
+if Manufacturer_Part_Number == "-":
 	print("Error extracting part information")
 	exit();
-	
-# copy manufacturer part number to clipboard
-import pyperclip
-pyperclip.copy(Manufacturer_Part_Number)
-spam = pyperclip.paste()
-
+if Value == "-":
+	Value = Manufacturer_Part_Number
 
 #symbol
 print("Select footprint for component:")
@@ -75,11 +71,12 @@ print("[4] Other")
 symbol_selection = input()
 if symbol_selection == "1":
 	part_symbol = "discrete\RESISTOR,SMALL R1,analog\R"
-if symbol_selection == "2":
+elif symbol_selection == "2":
 	part_symbol = "discrete\CAPACITOR NON-POL,discrete\CAP NP,SMALL CAP,analog\C"
-if symbol_selection == "3":
+elif symbol_selection == "3":
 	part_symbol = "INDUCTOR,INDUCTORa,analog\L"
-	
+elif symbol_selection == "4":
+	part_symbol = "-"
 
 # put the data in database
 import pyodbc
@@ -111,17 +108,26 @@ data = ( \
 
 columns = data[0][0]
 values = "'" + data[0][1] + "'"
-success_message = data[0][0] + ": "+ data[0][1]
+data_review = data[0][0] + ": "+ data[0][1]
 
 for i in range(1, len(data)):
 		columns += ", " + data[i][0]
 		values += ", '" + data[i][1] + "'"
-		success_message += "\n" + data[i][0] + ": "+ data[i][1]
+		data_review += "\n" + data[i][0] + ": "+ data[i][1]
 		
-insert_query = "INSERT INTO Components ("+ columns +") VALUES (" + values + ")"
-crsr.execute(insert_query)
-cnxn.commit()
 
-print ("Part has been succesfully added to CIS database:")
-print (success_message)
+print (data_review)
+confirm = input("Please review the data. Add to database ? [y/n]")
+
+if confirm == "y":
+	insert_query = "INSERT INTO Components ("+ columns +") VALUES (" + values + ")"
+	crsr.execute(insert_query.replace("µ", "u"))
+	cnxn.commit()
+	print ("\n\nPart has been succesfully added to CIS database.")
+	
+	# copy manufacturer part number to clipboard
+	import pyperclip
+	pyperclip.copy(Manufacturer_Part_Number)
+	spam = pyperclip.paste()
+
 end = input()
